@@ -245,19 +245,20 @@ void solve() {
 ## 后缀数组
 
 - 时间复杂度：后缀数组构建 $O(n\log n)$；Kasai 算法求高度数组 `lcp[i]` $O(n)$
+- 数组均为 `0-based`，其中 `lcp[0] = 0`
 
 ```cpp
 struct SuffixArray {
     int n;
     vector<int> sa;   // 排名为 i 的后缀起始位置
     vector<int> rk;   // 第 i 个后缀的排名
-    vector<int> lcp;  // lcp[i] = lcp(sa[i], sa[i-1]) 最长公共前缀长度
+    vector<int> lcp;  // LCP(suffix(sa[i]), suffix(sa[i-1])) 最长公共前缀长度
 
     SuffixArray(const string &s) {
         n = s.length();
         sa.resize(n);
         rk.resize(n);
-        lcp.resize(n - 1);
+        lcp.resize(n, 0);
         std::iota(sa.begin(), sa.end(), 0);
         sort(sa.begin(), sa.end(), [&](int i, int j) {
             return s[i] < s[j];
@@ -303,7 +304,7 @@ struct SuffixArray {
                 j = 0;
             } else {
                 for (j -= (j > 0); i + j < n && sa[rk[i] - 1] + j < n && s[i + j] == s[sa[rk[i] - 1] + j]; j++);
-                lcp[rk[i] - 1] = j;
+                lcp[rk[i]] = j;
             }
         }
     }
