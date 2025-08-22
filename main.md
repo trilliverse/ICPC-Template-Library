@@ -107,6 +107,139 @@ struct Fenwick {
 
 
 
+# 图论
+
+## 图的匹配
+
+### 一般图最大匹配
+
+- 带花树算法（Blossom Algorithm）$O(|V||E|^2)$
+- 顶点索引 `0-indexed`；`g.add(u,v)` 双向边；
+- 调用 `g.findMatching` 返回匹配数组，`match[u] = v` : 表示顶点 `u` 和顶点 `v` 相互匹配；`match[u] = -1`: 表示顶点 `u` 是未匹配点。可用 `std::count_if` 易得最大匹配对数。
+
+```cpp
+struct Graph {
+    int n;
+    vector<vector<int>> g;
+    Graph(int n) : n(n), g(n) {}
+    void add(int u, int v) {
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+
+    vector<int> findMatching() {
+        vector<int> match(n, -1), vis(n), link(n), f(n), dep(n);
+        // disjoint set union
+        auto find = [&](int u) {
+            while (f[u] != u)
+                u = f[u] = f[f[u]];
+            return u;
+        };
+        auto lca = [&](int u, int v) {
+            u = find(u);
+            v = find(v);
+            while (u != v) {
+                if (dep[u] < dep[v])
+                    std::swap(u, v);
+                u = find(link[match[u]]);
+            }
+            return u;
+        };
+        queue<int> que;
+        auto blossom = [&](int u, int v, int p) {
+            while (find(u) != p) {
+                link[u] = v;
+                v = match[u];
+                if (vis[v] == 0) {
+                    vis[v] = 1;
+                    que.push(v);
+                }
+                f[u] = f[v] = p;
+                u = link[v];
+            }
+        };
+        // find an augmenting path starting from u and augment (if exist)
+        auto augment = [&](int u) {
+            while (!que.empty()) que.pop();
+            std::iota(f.begin(), f.end(), 0);
+            // vis = 0 corresponds to inner vertices
+            // vis = 1 corresponds to outer vertices
+            std::fill(vis.begin(), vis.end(), -1);
+            que.push(u);
+            vis[u] = 1;
+            dep[u] = 0;
+            while (!que.empty()) {
+                int u = que.front();
+                que.pop();
+                for (auto v : g[u]) {
+                    if (vis[v] == -1) {
+                        vis[v] = 0;
+                        link[v] = u;
+                        dep[v] = dep[u] + 1;
+                        // found an augmenting path
+                        if (match[v] == -1) {
+                            for (int x = v, y = u, temp; y != -1; x = temp, y = x == -1 ? -1 : link[x]) {
+                                temp = match[y];
+                                match[x] = y;
+                                match[y] = x;
+                            }
+                            return;
+                        }
+                        vis[match[v]] = 1;
+                        dep[match[v]] = dep[u] + 2;
+                        que.push(match[v]);
+                    } else if (vis[v] == 1 && find(v) != find(u)) {
+                        // found a blossom
+                        int p = lca(u, v);
+                        blossom(u, v, p);
+                        blossom(v, u, p);
+                    }
+                }
+            }
+        };
+        // find a maximal matching greedily (decrease constant)
+        auto greedy = [&]() {
+            for (int u = 0; u < n; ++u) {
+                if (match[u] != -1) continue;
+                for (auto v : g[u]) {
+                    if (match[v] == -1) {
+                        match[u] = v;
+                        match[v] = u;
+                        break;
+                    }
+                }
+            }
+        };
+        greedy();
+        for (int u = 0; u < n; ++u) {
+            if (match[u] == -1) augment(u);
+        }
+        return match;
+    }
+};
+
+void solve() {
+    int n, m;
+    cin >> n >> m;
+    Graph g(n);
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        u--, v--;
+        g.add(u, v);
+    }
+
+    auto match = g.findMatching();
+    int cnt = count_if(match.begin(), match.end(), [](int x) { return x != -1; }) / 2;
+    cout << cnt << "\n";
+    for (int i = 0; i < match.size(); i++) {
+        cout << match[i] + 1 << " \n"[i == match.size() - 1];
+    }
+}
+```
+
+
+
 # 数学
 
 ## ModInt类
