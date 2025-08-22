@@ -1,3 +1,112 @@
+# 数据结构
+
+## 并查集
+
+```cpp
+struct DSU {
+    vector<int> f, siz;
+    // vector<int> dis; // 带权并查集
+
+    DSU() {}
+    DSU(int n) {
+        init(n);
+    }
+
+    void init(int n) {
+        f.resize(n);
+        std::iota(f.begin(), f.end(), 0);
+        siz.assign(n, 1);
+        // dis.assign(n, 0);
+    }
+
+    int find(int x) {
+        while (x != f[x]) {
+            x = f[x] = f[f[x]];
+        }
+        return x;
+    }
+    // int find(int x) {
+    //     if (x == f[x])
+    //         return x;
+    //     int r = find(f[x]);
+    //     dis[x] += dis[f[x]];
+    //     return f[x] = r;
+    // }
+
+    bool same(int x, int y) {
+        return find(x) == find(y);
+    }
+
+    bool merge(int x, int y) {
+        x = find(x);
+        y = find(y);
+        if (x == y) return false;
+        f[y] = x;
+        // dis[y] = siz[x];
+        siz[x] += siz[y];
+        return true;
+    }
+
+    int size(int x) {
+        return siz[find(x)];
+    }
+};
+```
+
+## 树状数组
+
+```cpp
+template <typename T>
+struct Fenwick {
+    int n;
+    vector<T> a;
+
+    Fenwick(int n_ = 0) {
+        init(n_);
+    }
+
+    void init(int n_) {
+        n = n_;
+        a.assign(n, T{});
+    }
+
+    void add(int x, const T &v) {
+        for (int i = x + 1; i <= n; i += i & -i) {
+            a[i - 1] = a[i - 1] + v;
+        }
+    }
+
+    // 前缀和: [0, x)
+    T sum(int x) {
+        T ans{};
+        for (int i = x; i > 0; i -= i & -i) {
+            ans = ans + a[i - 1];
+        }
+        return ans;
+    }
+
+    // 区间和: [l, r)
+    T rangeSum(int l, int r) {
+        return sum(r) - sum(l);
+    }
+
+    int select(const T &k) {
+        // 二分查找满足前缀和不超过 k 的最大下标
+        int x = 0;
+        T cur{};
+        for (int i = 1 << std::__lg(n); i; i /= 2) {
+            if (x + i <= n && cur + a[x + i - 1] <= k) {
+                x += i;
+                cur = cur + a[x - 1];
+            }
+        }
+        return x;
+    }
+};
+```
+
+
+
 # 数学
 
 ## ModInt类
