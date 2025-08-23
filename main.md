@@ -498,6 +498,7 @@ struct HLD {
 - 带花树算法（Blossom Algorithm）$O(|V||E|^2)$
 - 顶点索引 `0-indexed`；`g.add(u,v)` 双向边；
 - 调用 `g.findMatching` 返回匹配数组，`match[u] = v` : 表示顶点 `u` 和顶点 `v` 相互匹配；`match[u] = -1`: 表示顶点 `u` 是未匹配点。可用 `std::count_if` 易得最大匹配对数。
+- `greedy()` 通过贪心快速找到一个较大匹配，以减少后续带花树增广的次数，从而优化常数；**但有可能会破坏具体题目建图后的特殊结构！**
 
 ```cpp
 struct Graph {
@@ -759,7 +760,7 @@ struct SAM {
 
 # 数学
 
-## ModInt类
+## ModInt
 
 - 快速幂、高精度模乘、安全取模（考虑负数）、扩展欧几里得求逆元
 - `ModIntBase`：静态模数类（模数在编译时确定）
@@ -1092,5 +1093,33 @@ struct Comb {
         return fac(n) * invfac(m) * invfac(n - m);
     }
 } comb;
+```
+
+# 其他
+
+## 基姆-拉尔森公式
+
+```cpp
+// 基姆-拉尔森公式
+// 返回 0=Sunday, 1=Monday, ..., 6=Saturday
+int weekday(int y, int m, int d) {
+    if (m == 1 || m == 2) {
+        m += 12;
+        y -= 1;
+    }
+    int w = (d + 2 * m + 3 * (m + 1) / 5 + y + y / 4 - y / 100 + y / 400 + 1) % 7;
+    return (w + 7) % 7;
+}
+```
+
+## 随机化
+
+### 伪随机数
+
+```cpp
+// return unsigned int
+mt19937 rnd(time(nullptr)); 
+// return unsigned long long
+mt19937_64 rnd(chrono::steady_clock::now().time_since_epoch().count()); // 随机精度更高
 ```
 
