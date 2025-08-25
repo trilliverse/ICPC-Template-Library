@@ -1042,6 +1042,51 @@ using Z = ModInt<1000000007>;
 // DMI::setMod(p);
 ```
 
+## 数论
+
+### 齐肯多夫定理
+
+任何正整数 $n$ 都可以唯一表示成若干个**不连续**的斐波那契数之和。对于任何正整数，其齐肯多夫表述法都可以贪心选出每次不大于 $n$ 的最大斐波那契数 $f_i$
+
+时间复杂度：预处理 $P(\log N)$；每次分解 $O(\log n)$
+
+```cpp
+struct Zeckendorf {
+    vector<i64> fib;  // 1,2,3,5,8...为便于分解只存储一个1
+
+    Zeckendorf(i64 maxn = 1e18) {
+        fib = {1, 2};
+        while (true) {
+            i64 nxt = fib[fib.size() - 1] + fib[fib.size() - 2];
+            if (nxt > maxn) break;
+            fib.push_back(nxt);
+        }
+    }
+
+    bool isFib(i64 n) {
+        return binary_search(fib.begin(), fib.end(), n);
+    }
+
+    // Zeckendorf decomposition -> 从大到小
+    vector<i64> decompose(i64 n) {
+        vector<i64> res;
+        int i = fib.size() - 1;
+        while (n > 0 && i >= 0) {
+            if (fib[i] <= n) {
+                n -= fib[i];
+                res.push_back(fib[i]);
+                i -= 2;  // avoid consecutive fib numbers
+            } else {
+                i--;
+            }
+        }
+        return res;
+    }
+};
+```
+
+
+
 ## 组合数学
 
 - `using Z = ModInt<1000000007>;`
@@ -1094,6 +1139,24 @@ struct Comb {
     }
 } comb;
 ```
+
+
+
+## 博弈论
+
+### 斐波那契博弈
+
+**规则（单堆取石子）：**
+
+1. 初始有 $n$ 个石子。
+2. **先手第一步**：必须取走$1\sim n-1$ 个（不能一次全取光）
+3. **之后每一步**：若上一步对手取了 $k$ 个，则这一步**最多**取 $2k$ 个（至少 1 个）。
+4. 取到最后一个石子的玩家获胜。
+
+**结论**：
+
+- $n$ 是斐波那契数 ⇒ 先手必败；（第二数学归纳法）
+- 否则 ⇒ 先手必胜。（齐肯多夫定理分解 + 先手取完最小堆）
 
 # 其他
 
