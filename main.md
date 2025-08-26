@@ -769,7 +769,7 @@ struct SAM {
 ```cpp
 template <typename T>
 constexpr T power(T a, u64 b, T res = 1) {
-    for (; b != 0; b /= 2; a *= a) {
+    for (; b != 0; b /= 2, a *= a) {
         if (b & 1) res *= a;
     }
     return res;
