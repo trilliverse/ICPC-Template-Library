@@ -1111,8 +1111,8 @@ private:
 template <u32 Id>
 Barrett DynModInt<Id>::bt = 998244353;
 
-using Z = ModInt<1000000007>;
-// using Z = ModInt<998244353>;
+using Z = ModInt<998244353>;
+// using Z = ModInt<1000000007>;
 // using D = DynModInt<0>;
 // DMI::setMod(p);
 ```
