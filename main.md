@@ -491,7 +491,7 @@ struct HLD {
 
 ## 连通性相关
 
-### 强联通分量
+### 强连通分量
 
 - $\text{Tarjan}$ 算法求SCC，适用于**有向图**；`build()` 返回缩点后的有向无环图 $\text{DAG}$。
 - 时间复杂度 $O(n+m)$
@@ -564,11 +564,13 @@ struct SCC {
 };
 ```
 
-### 双联通分量
+### 双连通分量
 
-#### 边双联通分量
+#### 边双连通分量
 
-- 需要考虑**重边**（一定不是桥）；建图后 `ebcc.work()` 求解；
+在一个边双连通分量中，任意两点之间都至少存在两条**边不重复**的路径。移除分量中任意一条边，分量内部依然保持连通。各个E-BCC之间通过**桥**连接。
+
+- 建图时需要考虑**重边**（一定不是桥）；建图后 `ebcc.work()` 求解；
 - 时间复杂度：$O(n+m)$
 
 ```cpp
@@ -654,9 +656,88 @@ struct EBCC {
 };
 ```
 
+#### 点双连通分量
+
+在一个点双连通分量中，任意两点之间都至少存在两条**点不重复**的路径。移除分量中任意一个节点，分量内部依然保持连通。各个V-BCC之间通过**割点**连接。
+
+- 外部建图无需考虑重边和自环，传入 `VBCC` 后得到V-BCC（根据题目要求处理孤立点）
+- 时间复杂度：$O()$
+
+```cpp
+struct VBCC {
+    int n;
+    const vector<vector<int>>& g;
+    vector<int> dfn, low;
+    stack<int> stk;
+    int cur;  // current time
+
+    int cnt;                   // number of vbccs
+    vector<vector<int>> node;  // nodes in each vbcc
+    vector<bool> cut;          // 割点
+
+    VBCC(const vector<vector<int>>& _g) : n(_g.size()), g(_g) {
+        dfn.assign(n, 0);
+        low.assign(n, 0);
+        cut.assign(n, false);
+        while (!stk.empty()) stk.pop();
+        node.clear();
+        cur = cnt = 0;
+
+        for (int i = 0; i < n; ++i) {
+            if (!dfn[i]) dfs(i, -1);
+        }
+
+        // 如果题目要求孤立点也算一个V-BCC
+        vector<bool> vis(n, false);
+        for (const auto& c : node) {
+            for (int x : c) {
+                vis[x] = true;
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+            if (!vis[i]) {
+                cnt++;
+                node.push_back({i});
+            }
+        }
+    }
+
+    void dfs(int u, int fa) {
+        dfn[u] = low[u] = ++cur;
+        stk.push(u);
+        int child = 0;  // number of children in DFS tree
+        if (g[u].empty() && fa == -1) return;
+        for (int v : g[u]) {
+            if (v == fa) continue;
+            if (!dfn[v]) {
+                child++;
+                dfs(v, u);
+                low[u] = min(low[u], low[v]);
+                if (low[v] >= dfn[u]) {
+                    if (fa != -1) cut[u] = true;
+                    cnt++;
+                    node.emplace_back();
+                    while (true) {
+                        int t = stk.top();
+                        stk.pop();
+                        node.back().push_back(t);
+                        if (t == v) break;
+                    }
+                    node.back().push_back(u);  // 割点
+                }
+            } else {
+                low[u] = min(low[u], dfn[v]);
+            }
+        }
+        if (fa == -1 && child > 1) {
+            cut[u] = true;
+        }
+    }
+};
+```
 
 
-#### 点双联通分量
 
 ## 图的匹配
 
