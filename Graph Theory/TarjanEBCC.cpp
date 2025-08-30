@@ -6,8 +6,8 @@ struct EBCC {
     int cur;  // current time
 
     int cnt;                   // number of ebccs
-    vector<int> comp;          // component id of node i
-    vector<vector<int>> node;  // nodes in each ebcc
+    vector<int> comp;          // component id of node i (0-indexed)
+    vector<vector<int>> node;  // nodes in each ebcc (0-indexed)
 
     EBCC(int _n) : n(_n), g(_n) {
         m = 0;  // number of edges
@@ -45,7 +45,7 @@ struct EBCC {
     // 常规DFS，不经过桥，划分E-BCC
     void dfs2(int u, int id) {
         comp[u] = id;
-        node[id - 1].push_back(u);
+        node[id].push_back(u);  // 0-indexed
 
         for (const auto& edge : g[u]) {
             int v = edge.first;
@@ -71,9 +71,9 @@ struct EBCC {
 
         for (int i = 0; i < n; i++) {
             if (comp[i] == -1) {
-                cnt++;
-                node.resize(cnt);
+                node.emplace_back();
                 dfs2(i, cnt);
+                cnt++;
             }
         }
     }
