@@ -661,7 +661,7 @@ struct EBCC {
 在一个点双连通分量中，任意两点之间都至少存在两条**点不重复**的路径。移除分量中任意一个节点，分量内部依然保持连通。各个V-BCC之间通过**割点**连接。
 
 - 外部建图无需考虑重边和自环，传入 `VBCC` 后得到V-BCC（根据题目要求处理孤立点）
-- 时间复杂度：$O()$
+- 时间复杂度：$O(n+m)$
 
 ```cpp
 struct VBCC {
@@ -1364,7 +1364,7 @@ i64 CRT(const vector<i64> &a, const vector<i64> &m) {
 }
 ```
 
-#### 扩展CRT
+#### exCRT
 
 不保证模数 $m_i$ 两两互质的情况。通解：$x \equiv x_0 \pmod M$
 
@@ -1424,7 +1424,6 @@ i64 phi(i64 n) {
 
 - 当 $m$ 是质数时，使用第一条简化降幂要注意特判 $\gcd(a,m)\neq1$ 即 $a\%m=0$，此时 $a^b \equiv 0 \pmod m$ 
 ```cpp
-// 扩展欧拉定理 a^b mod m
 i64 exEuler(i64 a, i64 b, i64 m) {
     i64 ph = phi(m);
     i64 d = gcd(a, m);
@@ -1453,7 +1452,7 @@ i64 exEuler(i64 a, string bb, i64 m) {
 
 大组合数 $n$ 取模的求解，模数不太大 $\mathrm{mod} \sim 10^6$；更准确的说，只要模数的唯一分解 $\mathrm{mod}=\prod p_i^{k_i}$ 中所有素数幂的和 $\sum p_i^{k_i} \sim 10^6$ 规模时即可使用。
 
-#### Lucas定理
+#### Lucas
 
 - 模数为**素数** $p$，$n$ 可以很大远超常规预处理的范围，只需预处理到 $p$：
   $$
@@ -1496,7 +1495,7 @@ struct Lucas {
 // Lucas comb(p); comb.lucas(n,m) => C(n,m) % p
 ```
 
-#### 扩展Lucas定理
+#### exLucas
 
 对于 $\mathrm{mod}$ 不是素数的情况（素数幂 or 一般合数），质因数分解得 $\mathrm{mod}=p_1^{\alpha_1}p_2^{\alpha_2}\cdots p_k^{\alpha_k}$，分别求出模 $p_i ^{\alpha_i}$ 意义下组合数 $C(n,m)$ 的余数，对同余方程组用 $\text{CRT}$ 合并答案。
 
@@ -1566,6 +1565,108 @@ private:
     }
 };
 // Exlucas::exlucas(n, m, mod) => C(n,m) % mod
+```
+
+### 莫比乌斯反演
+
+### 杜教筛
+
+- 亚线性时间复杂度内计算**数论函数的前缀和**：通过狄利克雷卷积和整除分块，将一个复杂的前缀和问题转化为递归求解的形式。
+- 求解 $S(n)=\sum_{i=1}^n{f(i)}$，其中 $f$ 是数论函数，且满足：能找到另一个数论函数 $g$，使得 $f*g$ 的前缀和，以及 $g$ 本身的前缀和，能够快速计算（通常是 $O(1)$ 或 $O(\sqrt{n})$）
+- 最优时间复杂度：$O(N^{2/3})$，预处理前 $M$ 个点的前缀和（`maxn`），总复杂度 $O(M+N/\sqrt{M})$，当 $M=N^{2/3}$ 时达到最优。
+
+```cpp
+#define int long long
+
+struct Sieve {
+    int n;
+    vector<int> prime;
+    vector<int> spf;      // smallest prime factor
+    vector<int> mu;       // mobius
+    vector<int> phi;      // euler
+    vector<int> mu_pre;   // prefix sum of mobius
+    vector<int> phi_pre;  // prefix sum of euler
+
+    Sieve(int _n) : n(_n) {
+        prime.reserve(n / (log(n) - 1.1));
+        spf.resize(n + 1, 0);
+        mu.resize(n + 1, 0);
+        phi.resize(n + 1, 0);
+        mu_pre.resize(n + 1, 0);
+        phi_pre.resize(n + 1, 0);
+        mu[1] = 1;
+        phi[1] = 1;
+
+        for (int i = 2; i <= n; i++) {
+            if (spf[i] == 0) {
+                prime.push_back(i);
+                spf[i] = i;
+                phi[i] = i - 1;
+                mu[i] = -1;
+            }
+
+            for (int p : prime) {
+                if (i * p > n) break;
+                spf[i * p] = p;
+                if (i % p == 0) {
+                    mu[i * p] = 0;
+                    phi[i * p] = phi[i] * p;
+                    break;
+                } else {
+                    mu[i * p] = -mu[i];
+                    phi[i * p] = phi[i] * (p - 1);
+                }
+            }
+        }
+
+        for (int i = 1; i <= n; i++) {
+            mu_pre[i] = mu_pre[i - 1] + mu[i];
+            phi_pre[i] = phi_pre[i - 1] + phi[i];
+        }
+    }
+
+    int get_phi_pre(int n) const { return phi_pre[n]; }
+    int get_mu_pre(int n) const { return mu_pre[n]; }
+};
+
+class DjSieve {
+    const Sieve &base;
+    unordered_map<int, int> sphi;  // prefix sum of euler
+    unordered_map<int, int> smu;   // prefix sum of mobius
+
+public:
+    explicit DjSieve(const Sieve &sieve) : base(sieve) {}
+
+    int get_phi_sum(int n) {
+        if (n <= base.n) return base.get_phi_pre(n);
+        auto it = sphi.find(n);
+        if (it != sphi.end()) return it->second;
+
+        int res = n * (n + 1) / 2;
+        for (int l = 2, r; l <= n; l = r + 1) {
+            r = n / (n / l);
+            res -= (r - l + 1) * get_phi_sum(n / l);
+        }
+        return sphi[n] = res;
+    }
+
+    int get_mu_sum(int n) {
+        if (n <= base.n) return base.get_mu_pre(n);
+        auto it = smu.find(n);
+        if (it != smu.end()) return it->second;
+
+        int res = 1;
+        for (int l = 2, r; l <= n; l = r + 1) {
+            r = n / (n / l);
+            res -= (r - l + 1) * get_mu_sum(n / l);
+        }
+        return smu[n] = res;
+    }
+};
+
+constexpr int maxn = 1e6 + 5;  // n^(2/3)
+Sieve sieve(maxn);
+DjSieve dj(sieve);
 ```
 
 
@@ -1755,8 +1856,8 @@ int weekday(int y, int m, int d) {
 
 ```cpp
 // return unsigned int
-mt19937 rnd(time(nullptr)); 
+mt19937 rnd(chrono::steady_clock::now().time_since_epoch().count()); 
 // return unsigned long long
-mt19937_64 rnd(chrono::steady_clock::now().time_since_epoch().count()); // 随机精度更高
+mt19937_64 rnd(chrono::steady_clock::now().time_since_epoch().count());
 ```
 
